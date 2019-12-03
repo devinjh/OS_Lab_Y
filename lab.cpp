@@ -46,22 +46,19 @@ int main(int argc, char const *argv[])
 	// Starting the threads of the pushers
 	for (int i = 0; i < numOfPeople; i++)
 	{
-		// Causes an error
-		//pthread_create(&pushers[i], NULL, pusher, NULL);
+		pthread_create(&pushers[i], NULL, pusher, NULL);
 	}
 
 	// Starting the threads of the smokers
 	for (int i = 0; i < numOfPeople * 2; i++)
 	{
-		// Causes an error
-		//pthread_create(&smokers[i], NULL, smoker, NULL);
+		pthread_create(&smokers[i], NULL, smoker, NULL);
 	}
 
 	// Stall until all of the smokers terminate
 	for (int i = 0; i < numOfPeople * 2; i++)
 	{
-		// Causes an error
-		//pthread_join(smokers[i], NULL);
+		pthread_join(smokers[i], NULL);
 	}
 
 	// Stall until all of the pushers terminate
