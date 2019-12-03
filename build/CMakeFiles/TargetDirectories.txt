@@ -1,3 +1,0 @@
-/home/class/djh155/Documents/Lab_Y/build/CMakeFiles/rebuild_cache.dir
-/home/class/djh155/Documents/Lab_Y/build/CMakeFiles/lab.dir
-/home/class/djh155/Documents/Lab_Y/build/CMakeFiles/edit_cache.dir

@@ -40,7 +40,7 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < numOfPeople; i++)
 	{
 		// Causes an error
-		//pthread_create(&agents[i], NULL, agent, NULL);
+		pthread_create(&agents[i], NULL, agent, NULL);
 	}
 
 	// Starting the threads of the pushers
