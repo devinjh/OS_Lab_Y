@@ -1,1 +1,1 @@
-g++ lab.cpp -lpthread -o lab
+g++ lab.cpp -pthread -o lab
