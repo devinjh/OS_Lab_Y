@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// Test
 // Global variables
 //
 // Semaphores
