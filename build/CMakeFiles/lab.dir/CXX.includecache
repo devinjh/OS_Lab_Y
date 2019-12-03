@@ -9,4 +9,8 @@
 /home/class/djh155/Documents/Lab_Y/lab.cpp
 iostream
 -
+pthread.h
+-
+stdio.h
+-
 
