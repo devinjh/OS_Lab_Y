@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-// Test
 // Global variables
 //
 // Semaphores
@@ -23,18 +22,23 @@ void *agent(void *arg);
 void *pusher(void *arg);
 void *smoker(void *arg);
 
+// Struct table
 struct table {
   int tobacco = 0;
   int paper = 0;
   int matches = 0;
 };
 
+// All of our pthread mutexes
 table shared_table;
 pthread_mutex_t agentTableMutex;
 pthread_mutex_t pusherAtTableMutex;
 pthread_mutex_t tobaccoGuy;
 pthread_mutex_t paperGuy;
 pthread_mutex_t matchesGuy;
+
+// Testing
+pthread_mutex_t agentSetUpMutex;
 
 // Main
 int main(int argc, char const *argv[])
@@ -43,6 +47,8 @@ int main(int argc, char const *argv[])
   std::cout << "Started." << std::endl;
   const int NUM_AGENTS = 3;
   const int NUM_SMOKERS = 6;
+
+  std::cout << "Here 1" << std::endl;
   pthread_mutex_init(&agentTableMutex, 0);
   pthread_mutex_init(&pusherAtTableMutex,0);
   pthread_mutex_init(&tobaccoGuy,0);
@@ -52,26 +58,38 @@ int main(int argc, char const *argv[])
   pthread_mutex_lock(&paperGuy);
   pthread_mutex_lock(&matchesGuy);
 
+  // Testing
+  pthread_mutex_init(&agentSetUpMutex,0);
+
+  std::cout << "Here 2" << std::endl;
+
   // Creating the p_threads
   pthread_t agents[NUM_AGENTS];
   pthread_t pushers[NUM_AGENTS];
   pthread_t smokers[NUM_SMOKERS];
 
+  std::cout << "Here 3" << std::endl;
+
   // Starting threads of the agents
   for (int i = 0; i < NUM_AGENTS; i++) {
-    // Causes an error
     pthread_create(&agents[i], NULL, agent, (void *)i);
   }
+
+  std::cout << "Here 4" << std::endl;
 
   // Starting the threads of the pushers
   for (int i = 0; i < NUM_AGENTS; i++) {
     pthread_create(&pushers[i], NULL, pusher, NULL);
   }
 
+  std::cout << "Here 5" << std::endl;
+
   // Starting the threads of the smokers
   for (int i = 0; i < NUM_SMOKERS; i++) {
     pthread_create(&smokers[i], NULL, smoker, (void *)(i%3));
   }
+
+  std::cout << "Here 6" << std::endl;
 
   // Stall until all of the smokers terminate
   for (int i = 0; i < NUM_SMOKERS; i++) {
@@ -80,14 +98,12 @@ int main(int argc, char const *argv[])
 
   // Stall until all of the pushers terminate
   for (int i = 0; i < NUM_AGENTS; i++) {
-    // Not necessary?? I think
-    //pthread_join(pushers[i], NULL);
+    pthread_join(pushers[i], NULL);
   }
 
   // Stall until all of the agents terminate
   for (int i = 0; i < NUM_AGENTS; i++) {
-    // Not necessary?? I think
-    // pthread_join(agents[i], NULL);
+    pthread_join(agents[i], NULL);
   }
 
   // Saying we finished
@@ -100,11 +116,21 @@ int main(int argc, char const *argv[])
 // Agent
 void *agent(void *arg)
 {
+  std::cout << "Here 3-a" << std::endl;
+  pthread_mutex_lock(&agentSetUpMutex);
+  std::cout << "Here 3a" << std::endl;
   //
   int agent_num = (*(int*)arg);
+  //int agent_num = 0;
+  pthread_mutex_unlock(&agentSetUpMutex);
+  std::cout << "Here 3aa" << std::endl;
   int tobacco = 6;
+  std::cout << "Here 3aaa" << std::endl;
   int matches = 6;
+  std::cout << "Here 3aaaa" << std::endl;
   int paper = 6;
+
+  std::cout << "Here 3b" << std::endl;
 
   if(agent_num == 0) {
     paper = 0;
@@ -116,9 +142,13 @@ void *agent(void *arg)
     tobacco = 0;
   }
 
+  std::cout << "Here 3c" << std::endl;
+
   while((tobacco + matches + paper) > 0) {
     //wait for table to be open
+    std::cout << "Here 3d" << std::endl;
     pthread_mutex_lock(&agentTableMutex);
+    std::cout << "Here 3e" << std::endl;
 
 	//put stuff on table
     if(agent_num == 0) {
@@ -139,6 +169,7 @@ void *agent(void *arg)
       shared_table.paper++;
       shared_table.matches++;
     }
+    std::cout << "Here 3f" << std::endl;
   }
 
   //pthread_exit(3);
