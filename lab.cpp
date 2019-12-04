@@ -62,31 +62,40 @@ int main(int argc, char const *argv[])
   // Starting threads of the agents
   for (int i = 0; i < NUM_AGENTS; i++) {
     pthread_create(&agents[i], NULL, agent, &i);
+    usleep(100);
   }
 
   // Starting the threads of the pushers
-  for (int i1 = 0; i1 < NUM_AGENTS; i1++) {
-    pthread_create(&pushers[i1], NULL, pusher, NULL);
+  for (int i = 0; i < NUM_AGENTS; i++) {
+    pthread_create(&pushers[i], NULL, pusher, NULL);
+    usleep(100);
   }
 
   // Starting the threads of the smokers
-  for (int i2 = 0; i2 < NUM_SMOKERS; i2++) {
-    pthread_create(&smokers[i2], NULL, smoker, &i2);
+  for (int i = 0; i < NUM_SMOKERS; i++) {
+    pthread_create(&smokers[i], NULL, smoker, &i);
+    usleep(100);
   }
+
+  std::cout << "Here 1" << std::endl;
 
   // Stall until all of the smokers terminate
-  for (int i3 = 0; i3 < NUM_SMOKERS; i3++) {
-    pthread_join(smokers[i3], NULL);
+  for (int i = 0; i < NUM_SMOKERS; i++) {
+    pthread_join(smokers[i], NULL);
   }
+
+  std::cout << "Here 2" << std::endl;
 
   // Stall until all of the pushers terminate
-  for (int i4 = 0; i4 < NUM_AGENTS; i4++) {
-    pthread_join(pushers[i4], NULL);
+  for (int i = 0; i < NUM_AGENTS; i++) {
+    pthread_join(pushers[i], NULL);
   }
 
+  std::cout << "Here 3" << std::endl;
+
   // Stall until all of the agents terminate
-  for (int i5 = 0; i5 < NUM_AGENTS; i5++) {
-    pthread_join(agents[i5], NULL);
+  for (int i = 0; i < NUM_AGENTS; i++) {
+    pthread_join(agents[i], NULL);
   }
 
   // Saying we finished
@@ -101,7 +110,6 @@ void *agent(void *arg)
 {
   //
   int agent_num = (*(int*)arg);
-  std::cout << "agent_num: " << agent_num << std::endl;
   //
   int tobacco = 6;
   int matches = 6;
@@ -142,13 +150,14 @@ void *agent(void *arg)
     }
   }
 
+  std::cout << "agent done" << std::endl;
+
   //pthread_exit(3);
 }
 
 // Pusher
 void *pusher(void *arg)
-{	
-  //bool loopRunner = true;
+{
   for (int x = 0; x < 6; ++x)
   {
     //only 1 pusher at table
@@ -160,34 +169,32 @@ void *pusher(void *arg)
 	  		//signal matches guy
 	  		shared_table.paper--;
 	  		shared_table.tobacco--;
-        std::cout << "Created a cig for matches guy." << std::endl;
+        //std::cout << "Created a cig for matches guy." << std::endl;
 	  		pthread_mutex_unlock(&matchesGuy);
 	  		break;
-        //loopRunner = false;
 	  	}else if(shared_table.paper == 1 && shared_table.matches == 1)
 	  	{
 	  		//signal the tobacco guy
 	  		shared_table.paper--;
 	  		shared_table.matches--;
-        std::cout << "Created a cig for tobacco guy." << std::endl;
+        //std::cout << "Created a cig for tobacco guy." << std::endl;
 	  		pthread_mutex_unlock(&tobaccoGuy);
 	  		break;
-        //loopRunner = false;
 	  	}else if(shared_table.matches == 1 && shared_table.tobacco == 1)
 	  	{
 	  		//signal the paper guy
 	  		shared_table.matches--;
 	  		shared_table.tobacco--;
-        std::cout << "Created a cig for paper guy." << std::endl;
+        //std::cout << "Created a cig for paper guy." << std::endl;
 	  		pthread_mutex_unlock(&paperGuy);
 	  		break;
-        //loopRunner = false;
 	  	}
 	  }
 	  pthread_mutex_unlock(&pusherAtTableMutex);
 
     //table has stuff on it
-	  pthread_mutex_unlock(&agentTableMutex);  
+	  pthread_mutex_unlock(&agentTableMutex);
+    //std::cout << "At end of while loop in pusher. x: " << x << std::endl;
   }
 }
 
@@ -196,22 +203,24 @@ void *smoker(void *arg)
 {
 	int cigsSmoked = 0;
 	int type = (*(int*)arg) % 3;
-  std::cout << "smoker type: " << type << std::endl;
 
-	while(cigsSmoked != 3)
+	while(cigsSmoked < 3)
 	{
 		if(type == 0)
 		{
+      std::cout << "tobacco cig smoked" << std::endl;
 			pthread_mutex_lock(&tobaccoGuy);
 		}else if(type == 1)
 		{
+      std::cout << "paper cig smoked" << std::endl;
 			pthread_mutex_lock(&paperGuy);
 		}else if (type == 2)
 		{
+      std::cout << "matches cig smoked" << std::endl;
 			pthread_mutex_lock(&matchesGuy);
 		}
 		cigsSmoked++;
-		sleep(200);
+		usleep(200);
 	}
 
 	//pthread_exit(3);
