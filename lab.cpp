@@ -37,9 +37,6 @@ pthread_mutex_t tobaccoGuy;
 pthread_mutex_t paperGuy;
 pthread_mutex_t matchesGuy;
 
-// Testing
-pthread_mutex_t agentSetUpMutex;
-
 // Main
 int main(int argc, char const *argv[])
 {
@@ -47,8 +44,7 @@ int main(int argc, char const *argv[])
   std::cout << "Started." << std::endl;
   const int NUM_AGENTS = 3;
   const int NUM_SMOKERS = 6;
-
-  std::cout << "Here 1" << std::endl;
+  
   pthread_mutex_init(&agentTableMutex, 0);
   pthread_mutex_init(&pusherAtTableMutex,0);
   pthread_mutex_init(&tobaccoGuy,0);
@@ -58,52 +54,39 @@ int main(int argc, char const *argv[])
   pthread_mutex_lock(&paperGuy);
   pthread_mutex_lock(&matchesGuy);
 
-  // Testing
-  pthread_mutex_init(&agentSetUpMutex,0);
-
-  std::cout << "Here 2" << std::endl;
-
   // Creating the p_threads
   pthread_t agents[NUM_AGENTS];
   pthread_t pushers[NUM_AGENTS];
   pthread_t smokers[NUM_SMOKERS];
 
-  std::cout << "Here 3" << std::endl;
-
   // Starting threads of the agents
   for (int i = 0; i < NUM_AGENTS; i++) {
-    pthread_create(&agents[i], NULL, agent, (void *)i);
+    pthread_create(&agents[i], NULL, agent, &i);
   }
-
-  std::cout << "Here 4" << std::endl;
 
   // Starting the threads of the pushers
-  for (int i = 0; i < NUM_AGENTS; i++) {
-    pthread_create(&pushers[i], NULL, pusher, NULL);
+  for (int i1 = 0; i1 < NUM_AGENTS; i1++) {
+    pthread_create(&pushers[i1], NULL, pusher, NULL);
   }
-
-  std::cout << "Here 5" << std::endl;
 
   // Starting the threads of the smokers
-  for (int i = 0; i < NUM_SMOKERS; i++) {
-    pthread_create(&smokers[i], NULL, smoker, (void *)(i%3));
+  for (int i2 = 0; i2 < NUM_SMOKERS; i2++) {
+    pthread_create(&smokers[i2], NULL, smoker, &i2);
   }
 
-  std::cout << "Here 6" << std::endl;
-
   // Stall until all of the smokers terminate
-  for (int i = 0; i < NUM_SMOKERS; i++) {
-    pthread_join(smokers[i], NULL);
+  for (int i3 = 0; i3 < NUM_SMOKERS; i3++) {
+    pthread_join(smokers[i3], NULL);
   }
 
   // Stall until all of the pushers terminate
-  for (int i = 0; i < NUM_AGENTS; i++) {
-    pthread_join(pushers[i], NULL);
+  for (int i4 = 0; i4 < NUM_AGENTS; i4++) {
+    pthread_join(pushers[i4], NULL);
   }
 
   // Stall until all of the agents terminate
-  for (int i = 0; i < NUM_AGENTS; i++) {
-    pthread_join(agents[i], NULL);
+  for (int i5 = 0; i5 < NUM_AGENTS; i5++) {
+    pthread_join(agents[i5], NULL);
   }
 
   // Saying we finished
@@ -116,21 +99,13 @@ int main(int argc, char const *argv[])
 // Agent
 void *agent(void *arg)
 {
-  std::cout << "Here 3-a" << std::endl;
-  pthread_mutex_lock(&agentSetUpMutex);
-  std::cout << "Here 3a" << std::endl;
   //
   int agent_num = (*(int*)arg);
-  //int agent_num = 0;
-  pthread_mutex_unlock(&agentSetUpMutex);
-  std::cout << "Here 3aa" << std::endl;
+  std::cout << "agent_num: " << agent_num << std::endl;
+  //
   int tobacco = 6;
-  std::cout << "Here 3aaa" << std::endl;
   int matches = 6;
-  std::cout << "Here 3aaaa" << std::endl;
   int paper = 6;
-
-  std::cout << "Here 3b" << std::endl;
 
   if(agent_num == 0) {
     paper = 0;
@@ -142,15 +117,11 @@ void *agent(void *arg)
     tobacco = 0;
   }
 
-  std::cout << "Here 3c" << std::endl;
-
   while((tobacco + matches + paper) > 0) {
     //wait for table to be open
-    std::cout << "Here 3d" << std::endl;
     pthread_mutex_lock(&agentTableMutex);
-    std::cout << "Here 3e" << std::endl;
 
-	//put stuff on table
+	  //put stuff on table
     if(agent_num == 0) {
       tobacco--;
       matches--;
@@ -169,7 +140,6 @@ void *agent(void *arg)
       shared_table.paper++;
       shared_table.matches++;
     }
-    std::cout << "Here 3f" << std::endl;
   }
 
   //pthread_exit(3);
@@ -177,45 +147,56 @@ void *agent(void *arg)
 
 // Pusher
 void *pusher(void *arg)
-{
-	//only 1 pusher at table
-	pthread_mutex_lock(&pusherAtTableMutex);
-	while(true)
-	{
-		if(shared_table.paper == 1 && shared_table.tobacco == 1)
-		{
-			//signal matches guy
-			shared_table.paper--;
-			shared_table.tobacco--;
-			pthread_mutex_unlock(&matchesGuy);
-			break;
-		}else if(shared_table.paper == 1 && shared_table.matches == 1)
-		{
-			//signal the tobacco guy
-			shared_table.paper--;
-			shared_table.matches--;
-			pthread_mutex_unlock(&tobaccoGuy);
-			break;
-		}else if(shared_table.matches == 1 && shared_table.tobacco == 1)
-		{
-			//signal the paper guy
-			shared_table.matches--;
-			shared_table.tobacco--;
-			pthread_mutex_unlock(&paperGuy);
-			break;
-		}
-	}
-	pthread_mutex_unlock(&pusherAtTableMutex);
+{	
+  //bool loopRunner = true;
+  for (int x = 0; x < 6; ++x)
+  {
+    //only 1 pusher at table
+	  pthread_mutex_lock(&pusherAtTableMutex);
+    while(true)
+	  {
+	  	if(shared_table.paper == 1 && shared_table.tobacco == 1)
+	  	{
+	  		//signal matches guy
+	  		shared_table.paper--;
+	  		shared_table.tobacco--;
+        std::cout << "Created a cig for matches guy." << std::endl;
+	  		pthread_mutex_unlock(&matchesGuy);
+	  		break;
+        //loopRunner = false;
+	  	}else if(shared_table.paper == 1 && shared_table.matches == 1)
+	  	{
+	  		//signal the tobacco guy
+	  		shared_table.paper--;
+	  		shared_table.matches--;
+        std::cout << "Created a cig for tobacco guy." << std::endl;
+	  		pthread_mutex_unlock(&tobaccoGuy);
+	  		break;
+        //loopRunner = false;
+	  	}else if(shared_table.matches == 1 && shared_table.tobacco == 1)
+	  	{
+	  		//signal the paper guy
+	  		shared_table.matches--;
+	  		shared_table.tobacco--;
+        std::cout << "Created a cig for paper guy." << std::endl;
+	  		pthread_mutex_unlock(&paperGuy);
+	  		break;
+        //loopRunner = false;
+	  	}
+	  }
+	  pthread_mutex_unlock(&pusherAtTableMutex);
 
     //table has stuff on it
-	pthread_mutex_unlock(&agentTableMutex);
+	  pthread_mutex_unlock(&agentTableMutex);  
+  }
 }
 
 // Smoker
 void *smoker(void *arg)
 {
 	int cigsSmoked = 0;
-	int type = (*(int*)arg);
+	int type = (*(int*)arg) % 3;
+  std::cout << "smoker type: " << type << std::endl;
 
 	while(cigsSmoked != 3)
 	{
@@ -235,24 +216,6 @@ void *smoker(void *arg)
 
 	//pthread_exit(3);
 }
-
-// V
-void V(int *x)
-{
-  // Increment the semaphore
-  (*x) += 1;
-}
-
-// P
-void P(int *x)
-{
-  // Wait until the resource gets released
-  while ((*x) == 0) {};
-
-  // Set it back to 0 to make sure no other threads take the resource
-  (*x) -= 1;
-}
-
 
 
 
