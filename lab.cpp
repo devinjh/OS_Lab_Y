@@ -1,4 +1,7 @@
+
+
 #include <iostream>
+#include <string>
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -37,22 +40,32 @@ pthread_mutex_t tobaccoGuy;
 pthread_mutex_t paperGuy;
 pthread_mutex_t matchesGuy;
 
+// Testing
+pthread_mutex_t personAtTable;
+
 // Main
 int main(int argc, char const *argv[])
 {
   // Saying we started
   std::cout << "Started." << std::endl;
   const int NUM_AGENTS = 3;
-  const int NUM_SMOKERS = 6;
+  const int NUM_SMOKERS = NUM_AGENTS * 2;
   
+  // Intialize the mutexes
   pthread_mutex_init(&agentTableMutex, 0);
   pthread_mutex_init(&pusherAtTableMutex,0);
   pthread_mutex_init(&tobaccoGuy,0);
   pthread_mutex_init(&paperGuy,0);
   pthread_mutex_init(&matchesGuy,0);
-  pthread_mutex_lock(&tobaccoGuy);
+
+  // Lock the cig mutexes
+  /*pthread_mutex_lock(&tobaccoGuy);
   pthread_mutex_lock(&paperGuy);
-  pthread_mutex_lock(&matchesGuy);
+  pthread_mutex_lock(&matchesGuy);*/
+  pthread_mutex_lock(&pusherAtTableMutex);
+
+  // Testing
+  pthread_mutex_init(&personAtTable, 0);
 
   // Creating the p_threads
   pthread_t agents[NUM_AGENTS];
@@ -62,19 +75,19 @@ int main(int argc, char const *argv[])
   // Starting threads of the agents
   for (int i = 0; i < NUM_AGENTS; i++) {
     pthread_create(&agents[i], NULL, agent, &i);
-    usleep(100);
+    usleep(1000);
   }
 
   // Starting the threads of the pushers
   for (int i = 0; i < NUM_AGENTS; i++) {
     pthread_create(&pushers[i], NULL, pusher, NULL);
-    usleep(100);
+    usleep(1000);
   }
 
   // Starting the threads of the smokers
   for (int i = 0; i < NUM_SMOKERS; i++) {
     pthread_create(&smokers[i], NULL, smoker, &i);
-    usleep(100);
+    usleep(1000);
   }
 
   std::cout << "Here 1" << std::endl;
@@ -110,10 +123,12 @@ void *agent(void *arg)
 {
   //
   int agent_num = (*(int*)arg);
+
+  std::cout << "agent num: " << agent_num << std::endl;
   //
-  int tobacco = 9;
-  int matches = 9;
-  int paper = 9;
+  int tobacco = 6;
+  int matches = 6;
+  int paper = 6;
 
   if(agent_num == 0) {
     paper = 0;
@@ -126,29 +141,39 @@ void *agent(void *arg)
   }
 
   while((tobacco + matches + paper) > 0) {
-    //wait for table to be open
+    // Wait for the agent to leave
     pthread_mutex_lock(&agentTableMutex);
+    //wait for table to be open
+    //pthread_mutex_lock(&personAtTable);
 
 	  //put stuff on table
     if(agent_num == 0) {
       tobacco--;
       matches--;
+      pthread_mutex_lock(&personAtTable);
       shared_table.tobacco++;
       shared_table.matches++;
+      pthread_mutex_unlock(&personAtTable);
     }
     else if(agent_num == 1) {
       paper--;
       tobacco--;
+      pthread_mutex_lock(&personAtTable);
       shared_table.paper++;
       shared_table.tobacco++;
+      pthread_mutex_unlock(&personAtTable);
     }
     else {
       paper--;
       matches--;
+      pthread_mutex_lock(&personAtTable);
       shared_table.paper++;
       shared_table.matches++;
+      pthread_mutex_unlock(&personAtTable);
     }
-    pthread_mutex_unlock(&agentTableMutex);
+    //std::cout << "Agent Table Resources = T: " << shared_table.tobacco << " P: " << shared_table.paper << " M: " << shared_table.matches << std::endl;
+    //pthread_mutex_unlock(&personAtTable);
+    pthread_mutex_unlock(&pusherAtTableMutex);
   }
 
   std::cout << "agent done" << std::endl;
@@ -162,41 +187,56 @@ void *pusher(void *arg)
   for (int x = 0; x < 6; ++x)
   {
     //only 1 pusher at table
-	  pthread_mutex_lock(&pusherAtTableMutex);
+    //pthread_mutex_lock(&personAtTable);
+    pthread_mutex_lock(&pusherAtTableMutex);
     while(true)
 	  {
-	        std::cout << "T: " << shared_table.tobacco << " P: " << shared_table.paper << " M: " << shared_table.matches << std::endl;
+      //std::cout << "Pusher Table Resources = T: " << shared_table.tobacco << " P: " << shared_table.paper << " M: " << shared_table.matches << std::endl;
 
-	  	if(shared_table.paper > 0 && shared_table.tobacco > 0)
+	  	if(shared_table.paper == 1 && shared_table.tobacco == 1)
 	  	{
 	  		//signal matches guy
+        pthread_mutex_lock(&personAtTable);
+        pthread_mutex_lock(&matchesGuy);
 	  		shared_table.paper--;
 	  		shared_table.tobacco--;
+        pthread_mutex_unlock(&personAtTable);
         //std::cout << "Created a cig for matches guy." << std::endl;
 	  		pthread_mutex_unlock(&matchesGuy);
 	  		break;
-	  	}else if(shared_table.paper > 0 && shared_table.matches > 0)
+	  	}else if(shared_table.paper == 1 && shared_table.matches == 1)
 	  	{
 	  		//signal the tobacco guy
+        pthread_mutex_lock(&personAtTable);
+        pthread_mutex_lock(&tobaccoGuy);
 	  		shared_table.paper--;
 	  		shared_table.matches--;
+        pthread_mutex_unlock(&personAtTable);
         //std::cout << "Created a cig for tobacco guy." << std::endl;
 	  		pthread_mutex_unlock(&tobaccoGuy);
 	  		break;
-	  	}else if(shared_table.matches > 0 && shared_table.tobacco > 0)
+	  	}else if(shared_table.matches == 1 && shared_table.tobacco == 1)
 	  	{
 	  		//signal the paper guy
+        pthread_mutex_lock(&personAtTable);
+        pthread_mutex_lock(&paperGuy);
 	  		shared_table.matches--;
 	  		shared_table.tobacco--;
+        pthread_mutex_unlock(&personAtTable);
         //std::cout << "Created a cig for paper guy." << std::endl;
 	  		pthread_mutex_unlock(&paperGuy);
 	  		break;
 	  	}
+      else
+      {
+        break;
+      }
 	  }
-	  pthread_mutex_unlock(&pusherAtTableMutex);
+    //pthread_mutex_unlock(&personAtTable);
+	  //pthread_mutex_unlock(&pusherAtTableMutex);
 
     //table has stuff on it
-	  pthread_mutex_unlock(&agentTableMutex);
+    pthread_mutex_unlock(&agentTableMutex);
     //std::cout << "At end of while loop in pusher. x: " << x << std::endl;
   }
   pthread_exit(0);
@@ -205,26 +245,44 @@ void *pusher(void *arg)
 // Smoker
 void *smoker(void *arg)
 {
+  static int totalCigs = 0;
 	int cigsSmoked = 0;
 	int type = (*(int*)arg) % 3;
 
-	while(cigsSmoked < 3)
+  std::cout << "smoker: " << type << std::endl;
+
+	while(cigsSmoked != 3)
 	{
 		if(type == 0)
 		{
+      pthread_mutex_lock(&tobaccoGuy);
       std::cout << "tobacco cig smoked" << std::endl;
-			pthread_mutex_lock(&tobaccoGuy);
 		}else if(type == 1)
 		{
+      pthread_mutex_lock(&paperGuy);
       std::cout << "paper cig smoked" << std::endl;
-			pthread_mutex_lock(&paperGuy);
 		}else if (type == 2)
 		{
+      pthread_mutex_lock(&matchesGuy);
       std::cout << "matches cig smoked" << std::endl;
-			pthread_mutex_lock(&matchesGuy);
 		}
 		cigsSmoked++;
-		usleep(200);
+    totalCigs++;
+    std::cout << "totalCigs: " << totalCigs << std::endl;
+		//usleep(200);
+    if(type == 0)
+		{
+      pthread_mutex_unlock(&tobaccoGuy);
+      std::cout << "tobacco cig smoked" << std::endl;
+		}else if(type == 1)
+		{
+      pthread_mutex_unlock(&paperGuy);
+      std::cout << "paper cig smoked" << std::endl;
+		}else if (type == 2)
+		{
+      pthread_mutex_unlock(&matchesGuy);
+      std::cout << "matches cig smoked" << std::endl;
+		}
 	}
 
 	pthread_exit(0);
