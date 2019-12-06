@@ -111,9 +111,9 @@ void *agent(void *arg)
   //
   int agent_num = (*(int*)arg);
   //
-  int tobacco = 6;
-  int matches = 6;
-  int paper = 6;
+  int tobacco = 9;
+  int matches = 9;
+  int paper = 9;
 
   if(agent_num == 0) {
     paper = 0;
