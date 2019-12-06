@@ -148,11 +148,12 @@ void *agent(void *arg)
       shared_table.paper++;
       shared_table.matches++;
     }
+    pthread_mutex_unlock(&agentTableMutex);
   }
 
   std::cout << "agent done" << std::endl;
 
-  //pthread_exit(3);
+  pthread_exit(0);
 }
 
 // Pusher
@@ -164,7 +165,9 @@ void *pusher(void *arg)
 	  pthread_mutex_lock(&pusherAtTableMutex);
     while(true)
 	  {
-	  	if(shared_table.paper == 1 && shared_table.tobacco == 1)
+	        std::cout << "T: " << shared_table.tobacco << " P: " << shared_table.paper << " M: " << shared_table.matches << std::endl;
+
+	  	if(shared_table.paper > 0 && shared_table.tobacco > 0)
 	  	{
 	  		//signal matches guy
 	  		shared_table.paper--;
@@ -172,7 +175,7 @@ void *pusher(void *arg)
         //std::cout << "Created a cig for matches guy." << std::endl;
 	  		pthread_mutex_unlock(&matchesGuy);
 	  		break;
-	  	}else if(shared_table.paper == 1 && shared_table.matches == 1)
+	  	}else if(shared_table.paper > 0 && shared_table.matches > 0)
 	  	{
 	  		//signal the tobacco guy
 	  		shared_table.paper--;
@@ -180,7 +183,7 @@ void *pusher(void *arg)
         //std::cout << "Created a cig for tobacco guy." << std::endl;
 	  		pthread_mutex_unlock(&tobaccoGuy);
 	  		break;
-	  	}else if(shared_table.matches == 1 && shared_table.tobacco == 1)
+	  	}else if(shared_table.matches > 0 && shared_table.tobacco > 0)
 	  	{
 	  		//signal the paper guy
 	  		shared_table.matches--;
@@ -196,6 +199,7 @@ void *pusher(void *arg)
 	  pthread_mutex_unlock(&agentTableMutex);
     //std::cout << "At end of while loop in pusher. x: " << x << std::endl;
   }
+  pthread_exit(0);
 }
 
 // Smoker
@@ -223,7 +227,7 @@ void *smoker(void *arg)
 		usleep(200);
 	}
 
-	//pthread_exit(3);
+	pthread_exit(0);
 }
 
 
