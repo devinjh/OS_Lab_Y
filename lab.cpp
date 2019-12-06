@@ -269,7 +269,7 @@ void *smoker(void *arg)
 		cigsSmoked++;
     totalCigs++;
     std::cout << "totalCigs: " << totalCigs << std::endl;
-		//usleep(200);
+		usleep(200);
     if(type == 0)
 		{
       pthread_mutex_unlock(&tobaccoGuy);
